@@ -7,6 +7,7 @@ interface CreateUserFormProps {
 function CreateUserForm({ setUserWasCreated }: CreateUserFormProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
   const validations = {
     minLength: password.length >= 16,
@@ -27,42 +28,53 @@ function CreateUserForm({ setUserWasCreated }: CreateUserFormProps) {
   async function handleSubmit(e: React.FormEvent) {
   e.preventDefault();
 
-  if (!allValid) {
-    alert("Password does not meet requirements.");
-    return;
-  }
+  setError("");
 
-  const usernamePassword = `${username}:${password}`;
-  const encoded = btoa(usernamePassword);
+  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOlsic2hvdW1pa3NhaGExQGdtYWlsLmNvbSJdLCJpc3MiOiJoZW5uZ2UtYWRtaXNzaW9uLWNoYWxsZW5nZSIsInN1YiI6ImNoYWxsZW5nZSJ9.8TT1lGj-Sycloqo763h6pIBzBplhcf0x0G3RddJKuU8";
 
   try {
     const response = await fetch(
-      "https://api.challenge.hennge.com/api/challenges/frontend-validation/2024",
+      "https://api.challenge.hennge.com/password-validation-challenge-api/001/challenge-signup",
       {
         method: "POST",
         headers: {
-          Authorization: `Basic ${encoded}`,
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          github_url: "https://gist.github.com/shOumik-saha/48cce71f8fb0af2aaa70d85ff6349509",
+          username: username,
+          password: password,
         }),
       }
     );
 
+    if (response.ok) {
+      setUserWasCreated(true);
+      return;
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      setError("Not authenticated to access this resource.");
+      return;
+    }
+
     const data = await response.json();
 
-    console.log(data);
-
-    if (response.ok) {
-      alert("Mission completed!");
-      setUserWasCreated(true);
-    } else {
-      alert("Submission failed");
+    if (data?.error === "COMMON_PASSWORD") {
+      setError(
+        "Sorry, the entered password is not allowed, please try a different one."
+      );
+      return;
     }
+
+    if (response.status === 500) {
+      setError("Something went wrong, please try again.");
+      return;
+    }
+
+    setError("Something went wrong, please try again.");
   } catch (err) {
-    console.error(err);
-    alert("Network error");
+    setError("Something went wrong, please try again.");
   }
 }
 
@@ -147,7 +159,11 @@ function CreateUserForm({ setUserWasCreated }: CreateUserFormProps) {
           </li>
         </ul>
 
-        {/* Submit */}
+        {error && (
+        <div style={{ color: "red", marginTop: "8px" }}>
+        {error}
+        </div>
+        )}
 
         <button
           style={{
