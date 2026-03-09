@@ -24,18 +24,47 @@ function CreateUserForm({ setUserWasCreated }: CreateUserFormProps) {
 
   const allValid = Object.values(validations).every(Boolean);
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit(e: React.FormEvent) {
+  e.preventDefault();
 
-    if (!allValid) {
-      alert("Password does not meet requirements.");
-      return;
-    }
-
-    console.log("User created:", username);
-
-    setUserWasCreated(true);
+  if (!allValid) {
+    alert("Password does not meet requirements.");
+    return;
   }
+
+  const usernamePassword = `${username}:${password}`;
+  const encoded = btoa(usernamePassword);
+
+  try {
+    const response = await fetch(
+      "https://api.challenge.hennge.com/api/challenges/frontend-validation/2024",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${encoded}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          github_url: "https://gist.github.com/shOumik-saha/48cce71f8fb0af2aaa70d85ff6349509",
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    console.log(data);
+
+    if (response.ok) {
+      alert("Mission completed!");
+      setUserWasCreated(true);
+    } else {
+      alert("Submission failed");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Network error");
+  }
+}
 
   function ruleStyle(valid: boolean): CSSProperties {
     return {
